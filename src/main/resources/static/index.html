@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RealAction</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            max-width: 300px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #options {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px auto;
+        }
+
+        button#goodButton {
+            background-color: #4CAF50; /* Green */
+        }
+
+        button#okButton {
+            background-color: #FFC107; /* Yellow */
+        }
+
+        button#badButton {
+            background-color: #F44336; /* Red */
+        }
+
+        #response {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>RealAction</h1>
+
+        <div id="nicknameForm">
+            <h2>Enter Your Nickname</h2>
+            <input type="text" id="nicknameInput" placeholder="Enter your nickname">
+            <button onclick="setNickname()">Submit</button>
+        </div>
+        <div id="captureForm" style="display: none;">
+            <h2>Capture Options</h2>
+            <!-- Options for attendees -->
+            <div id="options">
+                <button id="goodButton" onclick="selectOption('Good')">Good</button>
+                <button id="okButton" onclick="selectOption('Ok')">Ok</button>
+                <button id="badButton" onclick="selectOption('Bad')">Bad</button>
+            </div>
+            <input type="text" id="optionsInput" placeholder="Enter options">
+            <button onclick="captureOptions()">Capture Options</button>
+        </div>
+    </div>
+
+    <script>
+        var stompClient = Stomp.over(new SockJS('/ws'));
+        var hasNickname = false;
+
+        stompClient.connect({}, function (frame) {
+            console.log('Connected: ' + frame);
+            stompClient.subscribe('/topic/capture', function (response) {
+                displayResponse(JSON.parse(response.body).message);
+            });
+        });
+
+        function setNickname() {
+            var nickname = document.getElementById('nicknameInput').value;
+            if (nickname) {
+                // Send the nickname to the server
+                stompClient.send("/app/setNickname", {}, JSON.stringify({ 'nickname': nickname }));
+                // Hide the nickname form and show the capture form
+                document.getElementById('nicknameForm').style.display = 'none';
+                document.getElementById('captureForm').style.display = 'block';
+                hasNickname = true;
+            }
+        }
+
+        function selectOption(option) {
+            if (hasNickname) {
+                // Send the selected option to the server
+                stompClient.send("/app/capture", {}, JSON.stringify({ 'options': option }));
+            }
+        }
+
+        function displayResponse(message) {
+            var responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = 'Response: ' + message;
+        }
+    </script>
+</body>
+</html>
